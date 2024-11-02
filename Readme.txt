@@ -1,4 +1,3 @@
-
 How to run the Paying Guest Accommodation System (PGAS) Project
 1. Download the  zip file
 
