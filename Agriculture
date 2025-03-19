@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# 1. Register Users
+echo "Registering a Validator on port 3310..."
+curl -X POST -H "Content-Type: application/json" -d '{"role": "validator"}' http://localhost:3310/api/register
+echo -e "\n----------------------"
+
+echo "Registering a Validator on port 3191..."
+curl -X POST -H "Content-Type: application/json" -d '{"role": "validator"}' http://localhost:3191/api/register
+echo -e "\n----------------------"
+
+echo "Registering a Farmer on port 3142..."
+FARMER_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d '{"role": "farmer"}' http://localhost:3142/api/register)
+echo "Farmer Registration Response: $FARMER_RESPONSE"
+# (Extract FARMER_PUBLIC_KEY from FARMER_RESPONSE if needed)
+echo -e "\n----------------------"
+
+echo "Registering a Customer on port 3013..."
+curl -X POST -H "Content-Type: application/json" -d '{"role": "customer"}' http://localhost:3013/api/register
+echo -e "\n----------------------"
+
+
+# 2. Check Wallet Info (Farmer's wallet)
+echo "Checking Farmer's Wallet Info on port 3142..."
+curl http://localhost:3142/api/wallet-info
+echo -e "\n----------------------"
+
+# 3. Check Validators List (from one of the validator nodes)
+echo "Checking Validators List on port 3310..."
+curl http://localhost:3310/api/validators
+echo -e "\n----------------------"
+
+# 4. Farmer Submits Produce Data
+echo "Farmer Submitting Produce Data on port 3142..."
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"farmerId": "<FARMER_PUBLIC_KEY>", "pricePerKg": 10, "quantity": 5, "iotData": {"temperature": 25, "humidity": 70, "freshness": 90}}' \
+  http://localhost:3142/api/submit-produce
+echo -e "\n----------------------"
+
+# 5. Check Transaction Pool (Farmer's node)
+echo "Checking Transaction Pool on port 3142..."
+curl http://localhost:3142/api/transaction-pool-map
+echo -e "\n----------------------"
+
+# 6. Validator(s) Validate Produce
+echo "Validator on port 3310 validates produce..."
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"validatorId": "<VALIDATOR1_PUBLIC_KEY>", "transactionId": "<TRANSACTION_ID>", "sampleData": {"temperature": 26, "humidity": 68, "freshness": 92}, "approval": "APPROVED"}' \
+  http://localhost:3310/api/validate-produce
+echo -e "\n----------------------"
+
+echo "Validator on port 3191 validates produce..."
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"validatorId": "<VALIDATOR2_PUBLIC_KEY>", "transactionId": "<TRANSACTION_ID>", "sampleData": {"temperature": 25, "humidity": 70, "freshness": 90}, "approval": "APPROVED"}' \
+  http://localhost:3191/api/validate-produce
+echo -e "\n----------------------"
+
+# Note: Replace <TRANSACTION_ID>, <VALIDATOR1_PUBLIC_KEY>, and <VALIDATOR2_PUBLIC_KEY> with actual values obtained from previous responses.
+
+# 7. Wait for Automatic Mining Trigger
+echo "Waiting for automatic mining (triggered every 5 seconds) ..."
+sleep 7  # Wait for a few seconds to ensure the automatic mining interval kicks in
+
+# 8. Check Blockchain for New Block (from Farmer's node)
+echo "Retrieving Blockchain on port 3142..."
+curl http://localhost:3142/api/blocks
+echo -e "\n----------------------"
+
+# 9. Verify Merkle Tree (Farmer's node)
+echo "Retrieving Merkle Tree on port 3142..."
+curl http://localhost:3142/api/merkle-tree
+echo -e "\n----------------------"
+
+# 10. Check Syncing (Optional: call from a validator node)
+echo "Checking Blockchain sync on Validator node at port 3310..."
+curl http://localhost:3310/api/blocks
+echo -e "\n----------------------"
+
+echo "Workflow Test Completed."
